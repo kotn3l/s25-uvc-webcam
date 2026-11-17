@@ -1,0 +1,4 @@
+# Samsung firmware binaries: dump them yourself, don't redistribute
+*.apk
+*.so
+*.zip
