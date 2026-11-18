@@ -96,6 +96,20 @@ CamX: ConfigureStreams() CHI Module failed to configure streams
 
 The later `No supported stream configurations with format 0x1` error comes from the placeholder path and is not the cause. Switch to the front camera. On a phone with healthy cameras this should not happen.
 
+### 6. Dropped frames at 30 fps
+
+The camera and the app deliver a steady 30 fps, but parts of frames are lost on the USB link. The webcam stream is isochronous, so the USB controller (dwc3) must be fed every 125 µs. Its interrupt is pinned to CPU 0, which is also busy with the camera, the JPEG encoder and the UI. When the interrupt runs late, the slot is missed (`dwc3_gadget_giveback ... ==> -18`, EXDEV in the kernel trace), the frame arrives incomplete, and the PC drops it.
+
+`usb_irq.sh` (run by the action button) moves the interrupt to CPU 3 and disables that core's deep idle state, which takes 222 µs to wake from. Switching back to file transfer restores both. Measured on the test phone with a kernel trace of `vb2_buf_done` and `dwc3_gadget_giveback`:
+
+| Setup | Frames with lost data |
+|---|---|
+| Interrupt on CPU 0 (stock) | about 9% |
+| Interrupt on CPU 3 | about 2% |
+| Interrupt on CPU 3, deep idle off | about 0.6% |
+
+Keeping CPU 3 out of deep idle costs a little battery while webcam mode is on.
+
 ## Troubleshooting
 
 | Symptom | Check |
@@ -105,6 +119,7 @@ The later `No supported stream configurations with format 0x1` error comes from 
 | Webcam toggle fails when run over adb | Switching USB modes drops adb and kills the shell. Run it detached: `adb shell su -c "setsid nohup /data/adb/ksud module action deviceaswebcam &"` |
 | White picture | See [section 5](#5-white-picture-with-a-damaged-back-camera). |
 | Low frame rate | Pick MJPEG on the PC. Check `cat /config/usb_gadget/g1/functions/uvc.0/streaming/mjpeg/m/720p/dwFrameInterval` shows `333333`. |
+| Stutter or dropped frames | Check the USB interrupt moved: `grep dwc3 /proc/interrupts` gives its number, then `cat /proc/irq/<number>/effective_affinity_list` should show `3`. See [section 6](#6-dropped-frames-at-30-fps). |
 | Verbose app logs | `adb shell su -c "setprop log.tag.CameraController VERBOSE"`, then restart the app. |
 
 If the phone misbehaves after installing, hold **Volume Down** during boot to start KernelSU in safe mode, which disables all modules.
@@ -117,6 +132,7 @@ module/
   service.sh      one framework restart per boot so the app gets registered
   action.sh       KernelSU action button: toggles webcam mode
   uvc_fps.sh      rewrites UVC frame rates (called by action.sh)
+  usb_irq.sh      moves the USB interrupt off CPU 0 (called by action.sh)
   system/         APK and JNI library from the donor (not in git)
 scripts/
   dump_from_donor.ps1   pulls the binaries from the donor phone

@@ -26,10 +26,12 @@ case "$(/system/bin/getprop sys.usb.config)" in
         echo "- Webcam mode is on, switching back to file transfer"
         /system/bin/am stopservice -n "$FGS" >/dev/null 2>&1
         /system/bin/svc usb setFunctions mtp
+        sh "$MODDIR/usb_irq.sh" off
         echo "- Done"
         ;;
     *)
         sh "$MODDIR/uvc_fps.sh"
+        sh "$MODDIR/usb_irq.sh" on
         echo "- Switching USB to webcam mode"
         if start_webcam || { echo "- Retrying (webcam app was starting up)"; start_webcam; }; then
             echo "- Done. The PC should now see a USB camera."
