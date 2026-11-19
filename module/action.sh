@@ -24,12 +24,15 @@ start_webcam() {
 case "$(/system/bin/getprop sys.usb.config)" in
     *uvc*)
         echo "- Webcam mode is on, switching back to file transfer"
+        sh "$MODDIR/prefs.sh" save
         /system/bin/am stopservice -n "$FGS" >/dev/null 2>&1
         /system/bin/svc usb setFunctions mtp
         sh "$MODDIR/usb_irq.sh" off
         echo "- Done"
         ;;
     *)
+        sh "$MODDIR/prefs.sh" save
+        sh "$MODDIR/prefs.sh" restore
         sh "$MODDIR/uvc_fps.sh"
         sh "$MODDIR/usb_irq.sh" on
         echo "- Switching USB to webcam mode"

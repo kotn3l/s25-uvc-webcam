@@ -45,11 +45,11 @@ Install `DeviceAsWebcam_ksu.zip` from the KernelSU app (Modules, then Install), 
 
 ### 3. Use it
 
-- After root loads, the module restarts the Android interface once (a soft reboot) so the system picks up the webcam app. See [Why it needs a restart](#why-it-needs-a-restart).
+- After root loads, the module restarts the Android interface once (a soft reboot) so the system picks up the webcam app. See [Why it needs a restart](#2-why-it-needs-a-restart).
 - In the KernelSU app, open the **DeviceAsWebcam** module card and tap the **action button** to turn webcam mode on. Tap it again to go back to file transfer.
 - On the PC, pick **MJPEG** for 720p or 1080p at 30 fps.
 
-To make the webcam use the front camera, open the webcam preview from its notification and switch cameras there.
+To make the webcam use the front camera, open the webcam preview from its notification and switch cameras there. The module remembers this choice across reboots; see [section 7](#7-camera-choice-resets-after-reboot).
 
 ## What was wrong, and how each fix works
 
@@ -110,6 +110,14 @@ The camera and the app deliver a steady 30 fps, but parts of frames are lost on 
 
 Keeping CPU 3 out of deep idle costs a little battery while webcam mode is on.
 
+### 7. Camera choice resets after reboot
+
+Because the app is missing when Android boots (see [section 2](#2-why-it-needs-a-restart)), the package manager treats it as removed and wipes its data (`System package com.android.DeviceAsWebcam no longer exists; its data will be wiped`). The app then starts with defaults, which means the back camera. On a phone with a damaged back camera, the picture goes white again.
+
+`prefs.sh` keeps a copy of the app's settings as `user.prefs.xml` in the module folder (`/data/adb/modules/deviceaswebcam/`). The action button saves the current settings each time it switches webcam mode off, and also on any later switch-on in the same boot. On the first switch-on after a reboot, it stops the app and puts the saved copy back, with the owner and SELinux label of the app's data folder. The copy is created the first time you switch webcam mode off, so pick your camera, then toggle off and on once.
+
+Reinstalling the module zip deletes the saved copy.
+
 ## Troubleshooting
 
 | Symptom | Check |
@@ -117,7 +125,7 @@ Keeping CPU 3 out of deep idle costs a little battery while webcam mode is on.
 | Action says the app is not registered | It restarts the framework itself; tap the button again afterwards. |
 | PC sees no camera, phone goes back to file transfer | Tap the action button again (first start can be slow). Run `adb logcat \| grep -i DeviceAsWebcam` for errors. |
 | Webcam toggle fails when run over adb | Switching USB modes drops adb and kills the shell. Run it detached: `adb shell su -c "setsid nohup /data/adb/ksud module action deviceaswebcam &"` |
-| White picture | See [section 5](#5-white-picture-with-a-damaged-back-camera). |
+| White picture | See [section 5](#5-white-picture-with-a-damaged-back-camera). If it comes back after a reboot, see [section 7](#7-camera-choice-resets-after-reboot). |
 | Low frame rate | Pick MJPEG on the PC. Check `cat /config/usb_gadget/g1/functions/uvc.0/streaming/mjpeg/m/720p/dwFrameInterval` shows `333333`. |
 | Stutter or dropped frames | Check the USB interrupt moved: `grep dwc3 /proc/interrupts` gives its number, then `cat /proc/irq/<number>/effective_affinity_list` should show `3`. See [section 6](#6-dropped-frames-at-30-fps). |
 | Verbose app logs | `adb shell su -c "setprop log.tag.CameraController VERBOSE"`, then restart the app. |
@@ -133,6 +141,7 @@ module/
   action.sh       KernelSU action button: toggles webcam mode
   uvc_fps.sh      rewrites UVC frame rates (called by action.sh)
   usb_irq.sh      moves the USB interrupt off CPU 0 (called by action.sh)
+  prefs.sh        saves and restores the webcam app's settings (called by action.sh)
   system/         APK and JNI library from the donor (not in git)
 scripts/
   dump_from_donor.ps1   pulls the binaries from the donor phone

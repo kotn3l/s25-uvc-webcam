@@ -2,3 +2,4 @@
 *.apk
 *.so
 *.zip
+module/user.prefs.xml
