@@ -10,10 +10,28 @@ Tested on an SM-S938B running Android 17 (`CP2A.260605.016`, `S938BXXUCDZIF`), w
 
 - Galaxy S25 Ultra on Android 17, rooted with **KernelSU**. This was tested with a late-loaded KernelSU (`ksud samsung-v2.2`) on a locked bootloader.
 - The **[meta-overlayfs](https://github.com/KernelSU-Modules-Repo/meta-overlayfs/releases)** metamodule. KernelSU 2.x no longer mounts module files over `/system` without one.
-- A **donor phone** that ships `DeviceAsWebcam` and is signed with the same Samsung platform key. A Galaxy S26 Ultra works. The binaries are not included in this repo; see step 1.
-- `adb` ([Android platform-tools](https://developer.android.com/tools/releases/platform-tools)).
+- `adb` ([Android platform-tools](https://developer.android.com/tools/releases/platform-tools)), only if you build the module yourself.
 
 ## Installation
+
+### Quick install (prebuilt)
+
+Download `DeviceAsWebcam_ksu_v1.2.zip` from the [latest release](https://github.com/kotn3l/s25-uvc-webcam/releases/latest) and install it from the KernelSU app (Modules, then Install), **after** meta-overlayfs is installed. Then reboot, root as usual and go to [step 3](#3-use-it).
+
+The release includes the webcam app and its library, taken from a Galaxy S26 Ultra:
+
+| | |
+|---|---|
+| Donor phone | Galaxy S26 Ultra (SM-S948B) |
+| Donor build | Android 17, `CP2A.260605.016`, `S948BXXU5BZJA` |
+| `DeviceAsWebcam.apk` SHA-256 | `0c71eb8e21addf47bcf9cddf5f7cf2856e7dc5132928138ba374faadc0294166` |
+| `libjni_deviceAsWebcam.so` SHA-256 | `a32b4a5265ef83f2173bc97fa5dc7379950eac90b91030d100c34bd481828d81` |
+
+The app runs as the system user, so it only works if your phone's firmware is signed with the same Samsung platform key. It was tested on an S25 Ultra on `S938BXXUCDZIF`. If the app doesn't register on your phone, build the module from your own donor as described below.
+
+### Building it yourself
+
+You need a **donor phone** that ships `DeviceAsWebcam` and is signed with the same Samsung platform key as yours, such as a Galaxy S26 Ultra.
 
 ### 1. Dump the webcam app from the donor phone
 
@@ -151,4 +169,6 @@ scripts/
 ## Notes
 
 - Samsung's software update may break root. You can disable it with `pm disable-user --user 0 com.wssyncmldm` and `pm disable-user --user 0 com.sec.android.soagent` (re-enable with `pm enable`).
-- `DeviceAsWebcam` itself is AOSP code ([source](https://android.googlesource.com/platform/packages/services/DeviceAsWebcam/)), but the binaries you dump are Samsung builds signed with Samsung's key. Don't publish them.
+## Copyright
+
+The scripts in this repository were written for this project. The binaries in the release (`DeviceAsWebcam.apk` and `libjni_deviceAsWebcam.so`) are not: they were taken unmodified from a Galaxy S26 Ultra's firmware. `DeviceAsWebcam` is based on Android Open Source Project code by Google ([source](https://android.googlesource.com/platform/packages/services/DeviceAsWebcam/)), and these builds were compiled and signed by Samsung. Copyright in them belongs to **Samsung Electronics** and **Google LLC**. They are redistributed only so the module works on phones that lack them. This project is not affiliated with or endorsed by Samsung or Google. If you are a rights holder and want them removed, open an issue.
