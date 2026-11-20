@@ -20,7 +20,7 @@ Download `DeviceAsWebcam_ksu_v1.2.zip` from the [latest release](https://github.
 
 The release includes the webcam app and its library, taken from a Galaxy S26 Ultra:
 
-| | |
+| Item | Details |
 |---|---|
 | Donor phone | Galaxy S26 Ultra (SM-S948B) |
 | Donor build | Android 17, `CP2A.260605.016`, `S948BXXU5BZJA` |
